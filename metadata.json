@@ -1,0 +1,9 @@
+{
+  "name": "AI Live Seller",
+  "description": "A SaaS platform dashboard for managing automated AI-powered live streams on TikTok Shop. Configure products, generate scripts, and monitor real-time chat and sales during a live session.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera",
+    "display-capture"
+  ]
+}
