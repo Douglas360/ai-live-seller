@@ -96,7 +96,21 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
   }, [mediaStream]);
 
   const playAudio = useCallback(async (base64Audio: string) => {
-    if (!audioContextRef.current || audioContextRef.current.state === 'closed') return;
+    if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+      return Promise.reject(new Error("AudioContext is not available."));
+    }
+    
+    // Automatically resume the AudioContext if it was suspended by the browser.
+    if (audioContextRef.current.state === 'suspended') {
+      try {
+        await audioContextRef.current.resume();
+      } catch (e) {
+        console.error("Error resuming AudioContext:", e);
+        onError("O áudio foi bloqueado. Clique na página para reativá-lo.");
+        return Promise.reject(e);
+      }
+    }
+
     return new Promise<void>(async (resolve, reject) => {
         try {
             const audioBytes = decode(base64Audio);
@@ -116,7 +130,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
             reject(error);
         }
     });
-  }, []);
+  }, [onError]);
 
   const updateSegmentStatus = (segmentId: string, status: SegmentStatus) => {
     setScript(prev => prev.map(s => s.id === segmentId ? { ...s, status } : s));
@@ -343,15 +357,24 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
                 setIsSpeaking(true);
                 updateSegmentStatus(nextSegment.id, 'speaking');
 
-                for (let i = 0; i < nextSegment.textLines.length; i++) {
-                    if (!activeLoopsRef.current.playback) break;
-                    if (isPaused) { 
-                        updateSegmentStatus(nextSegment.id, 'queued');
-                        setIsSpeaking(false);
-                        break; 
+                try {
+                    for (let i = 0; i < nextSegment.textLines.length; i++) {
+                        if (!activeLoopsRef.current.playback) break;
+                        if (isPaused) { 
+                            updateSegmentStatus(nextSegment.id, 'queued');
+                            setIsSpeaking(false);
+                            break; 
+                        }
+                        setCurrentNarrationLine(nextSegment.textLines[i]);
+                        await playAudio(nextSegment.audioData[i]);
                     }
-                    setCurrentNarrationLine(nextSegment.textLines[i]);
-                    await playAudio(nextSegment.audioData[i]);
+                } catch (error) {
+                    console.error("Error during audio playback in segment, skipping to next.", error);
+                    if (error instanceof Error) {
+                        onError(`An error occurred during playback: ${error.message}`);
+                    } else {
+                        onError("An unknown error occurred during playback.");
+                    }
                 }
                 
                 if (activeLoopsRef.current.playback && !isPaused) {
@@ -376,14 +399,17 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
   }, [session, playAudio, isPaused, isLoading, isScreenShared, processedCommentKeys, onError]);
 
   const handlePauseToggle = () => {
-    setIsPaused(prev => !prev);
-    if (audioContextRef.current) {
-        if (isPaused) {
-             audioContextRef.current.resume();
+    setIsPaused(prevIsPaused => {
+      const isNowPaused = !prevIsPaused;
+      if (audioContextRef.current) {
+        if (isNowPaused) {
+          audioContextRef.current.suspend().catch(e => console.error("Failed to suspend audio context", e));
         } else {
-             audioContextRef.current.suspend();
+          audioContextRef.current.resume().catch(e => console.error("Failed to resume audio context", e));
         }
-    }
+      }
+      return isNowPaused;
+    });
   };
 
   if (isLoading && isScreenShared) {
