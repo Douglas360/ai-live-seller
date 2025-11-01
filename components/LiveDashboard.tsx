@@ -42,8 +42,10 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
       const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
       setMediaStream(stream);
       setIsScreenShared(true);
+      // FIX: Corrected the try...catch syntax. This was causing all subsequent scope-related errors in the file.
     } catch (error) {
       console.error("Error accessing screen share:", error);
+      onError("Failed to start screen sharing. Please check browser permissions.");
     }
   };
 
@@ -91,6 +93,9 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
 
     return () => {
         clearInterval(frameCaptureInterval);
+        if (videoRefForCapture.current) {
+            videoRefForCapture.current.srcObject = null;
+        }
         videoRefForCapture.current = null;
     }
   }, [mediaStream]);
@@ -114,7 +119,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
     return new Promise<void>(async (resolve, reject) => {
         try {
             const audioBytes = decode(base64Audio);
-            const audioBuffer = await decodeAudioData(audioBytes, audioContextRef.current!, 24000, 1);
+            const audioBuffer = await decodeAudioData(audioBytes, audioContextRef.current!);
             
             if (!activeLoopsRef.current.playback || !audioContextRef.current || audioContextRef.current.state === 'closed') {
                 return reject(new Error("Playback stopped post-decode"));
@@ -230,7 +235,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
   useEffect(() => {
     try {
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+        audioContextRef.current = new AudioContext();
     } catch (e) { console.error("Web Audio API is not supported.", e); }
     
     activeLoopsRef.current = { generation: true, playback: true };
@@ -346,118 +351,124 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
 
             let nextSegment: SpeechSegment | undefined;
             setScript(currentScript => {
-                const isAlreadySpeaking = currentScript.some(s => s.status === 'speaking');
-                if (!isAlreadySpeaking) {
-                    nextSegment = currentScript.find(s => s.status === 'queued');
+                const isSpeaking = currentScript.some(s => s.status === 'speaking');
+                if (isSpeaking) {
+                    return currentScript;
+                }
+                const queuedSegments = currentScript.filter(s => s.status === 'queued');
+                if (queuedSegments.length > 0) {
+                    nextSegment = queuedSegments[0];
                 }
                 return currentScript;
             });
 
             if (nextSegment) {
                 setIsSpeaking(true);
-                updateSegmentStatus(nextSegment.id, 'speaking');
+                const segment = nextSegment;
+                updateSegmentStatus(segment.id, 'speaking');
 
-                try {
-                    for (let i = 0; i < nextSegment.textLines.length; i++) {
-                        if (!activeLoopsRef.current.playback) break;
-                        if (isPaused) { 
-                            updateSegmentStatus(nextSegment.id, 'queued');
-                            setIsSpeaking(false);
+                for (const [lineIndex, line] of segment.textLines.entries()) {
+                    if (!activeLoopsRef.current.playback || isPaused) break;
+                    setCurrentNarrationLine(line);
+                    const audioData = segment.audioData[lineIndex];
+                    if (audioData) {
+                        try {
+                            await playAudio(audioData);
+                        } catch (e) {
+                            console.error("Playback failed, stopping loop.", e);
                             break; 
                         }
-                        setCurrentNarrationLine(nextSegment.textLines[i]);
-                        await playAudio(nextSegment.audioData[i]);
-                    }
-                } catch (error) {
-                    console.error("Error during audio playback in segment, skipping to next.", error);
-                    if (error instanceof Error) {
-                        onError(`An error occurred during playback: ${error.message}`);
-                    } else {
-                        onError("An unknown error occurred during playback.");
                     }
                 }
                 
-                if (activeLoopsRef.current.playback && !isPaused) {
-                    updateSegmentStatus(nextSegment.id, 'completed');
-                }
                 setIsSpeaking(false);
+                setCurrentNarrationLine('Aguardando próximo bloco de narração...');
+                updateSegmentStatus(segment.id, 'completed');
+
             } else {
-                 await new Promise(r => setTimeout(r, 200));
+                await new Promise(r => setTimeout(r, 200));
             }
         }
     };
-
+    
     generationLoop();
     playbackLoop();
 
     return () => {
       activeLoopsRef.current = { generation: false, playback: false };
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      if (audioContextRef.current) {
         audioContextRef.current.close().catch(console.error);
+        audioContextRef.current = null;
       }
     };
-  }, [session, playAudio, isPaused, isLoading, isScreenShared, processedCommentKeys, onError]);
+  }, [isScreenShared, isPaused, playAudio, session.product, session.voice.id, processedCommentKeys, isLoading, onError]);
 
-  const handlePauseToggle = () => {
-    setIsPaused(prevIsPaused => {
-      const isNowPaused = !prevIsPaused;
-      if (audioContextRef.current) {
-        if (isNowPaused) {
-          audioContextRef.current.suspend().catch(e => console.error("Failed to suspend audio context", e));
-        } else {
-          audioContextRef.current.resume().catch(e => console.error("Failed to resume audio context", e));
-        }
-      }
-      return isNowPaused;
-    });
-  };
-
-  if (isLoading && isScreenShared) {
+  if (!isScreenShared) {
     return (
-        <div className="flex flex-col items-center justify-center h-96 text-center">
-            <svg className="animate-spin h-10 w-10 text-accent mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <h2 className="text-2xl font-bold text-text-light">Preparando a live...</h2>
-            <p className="text-text-dark">A IA está aquecendo a voz e preparando o roteiro. Por favor, aguarde.</p>
-        </div>
-    );
+      <div className="flex flex-col items-center justify-center h-full text-center bg-secondary rounded-xl border border-border-color p-8">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-accent mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+          <h2 className="text-2xl font-bold text-text-light mb-2">Share your screen to begin</h2>
+          <p className="text-text-dark mb-6 max-w-md">For the AI to see comments and interact with the audience, you need to share your TikTok live stream screen.</p>
+          <Button onClick={handleShareScreen}>
+            Share Screen
+          </Button>
+      </div>
+    )
   }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
-      <div className="lg:col-span-2">
-         {isScreenShared ? (
-            <StreamPreview 
-              product={session.product} 
-              currentScriptLine={currentNarrationLine}
-              stream={mediaStream}
-            />
-        ) : (
-            <div className="aspect-video bg-secondary rounded-xl flex flex-col items-center justify-center p-8 border-2 border-dashed border-border-color text-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-accent mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <h3 className="text-xl font-bold text-text-light mb-2">Compartilhe sua Tela para Começar</h3>
-                <p className="text-text-dark max-w-md mb-6">
-                    Para que a IA possa interagir com sua live, clique no botão abaixo e compartilhe a tela ou janela onde a transmissão do TikTok está acontecendo.
-                </p>
-                <Button onClick={handleShareScreen} className="!py-3 text-base">
-                    <div className="flex items-center space-x-2">
-                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                        <span>Compartilhar Tela</span>
-                    </div>
-                </Button>
+      <div className="lg:col-span-2 flex flex-col space-y-4">
+        <StreamPreview 
+          product={session.product} 
+          currentScriptLine={currentNarrationLine}
+          stream={mediaStream}
+        />
+        <div className="relative bg-secondary rounded-xl border border-border-color p-4 flex-grow">
+            <div className="absolute inset-0 bg-black/30 rounded-xl flex items-center justify-center opacity-0 transition-opacity pointer-events-none" style={{ opacity: isLoading ? 1 : 0 }}>
+                <div className="flex flex-col items-center text-center p-4">
+                    <svg className="animate-spin h-8 w-8 text-white mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="text-text-light font-semibold text-lg">AI is warming up...</p>
+                    <p className="text-text-dark text-sm">Generating initial script, please wait.</p>
+                </div>
             </div>
-        )}
+            
+            <div className="flex flex-col h-full">
+              <h3 className="text-lg font-bold text-text-light mb-2">Live Status</h3>
+              <div className="flex items-center space-x-4 mb-4 text-sm flex-wrap gap-y-2">
+                <div className="flex items-center space-x-2">
+                  <span className="font-semibold text-text-dark">Status:</span>
+                  <span className={`font-bold ${isSpeaking ? 'text-accent' : 'text-green-400'}`}>{isSpeaking ? 'Speaking' : 'Listening'}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="font-semibold text-text-dark">Voice:</span>
+                  <span className="text-text-light">{session.voice.name}</span>
+                </div>
+                 <div className="flex items-center space-x-2">
+                  <span className="font-semibold text-text-dark">AI Paused:</span>
+                  <span className={`font-bold ${isPaused ? 'text-yellow-400' : 'text-text-light'}`}>{isPaused ? 'Yes' : 'No'}</span>
+                </div>
+              </div>
+              <div className="bg-primary p-4 rounded-lg flex-grow">
+                 <p className="text-sm text-text-dark">Current Line:</p>
+                 <p className="text-lg font-semibold text-text-light min-h-[50px] flex items-center">
+                    {currentNarrationLine}
+                    {isSpeaking && <span className="inline-block w-2 h-2 bg-accent rounded-full ml-2 animate-pulse"></span>}
+                 </p>
+              </div>
+            </div>
+        </div>
       </div>
-      <div className="lg:col-span-1">
+
+      <div className="lg:col-span-1 h-full">
         <ControlPanel 
           script={script}
           comments={comments}
           isPaused={isPaused}
-          onPauseToggle={handlePauseToggle}
+          onPauseToggle={() => setIsPaused(p => !p)}
           onStop={onEndLive}
           onEditSegment={handleEditSegment}
           onDeleteSegment={handleDeleteSegment}

@@ -86,13 +86,13 @@ const LiveSetup = ({ products, onStartLive, onAddProduct }: LiveSetupProps) => {
 
       if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+        audioContextRef.current = new AudioContext();
       } else if (audioContextRef.current.state === 'suspended') {
           await audioContextRef.current.resume();
       }
 
       const audioBytes = decode(base64Audio);
-      const audioBuffer = await decodeAudioData(audioBytes, audioContextRef.current, 24000, 1);
+      const audioBuffer = await decodeAudioData(audioBytes, audioContextRef.current);
 
       const source = audioContextRef.current.createBufferSource();
       source.buffer = audioBuffer;
@@ -106,7 +106,7 @@ const LiveSetup = ({ products, onStartLive, onAddProduct }: LiveSetupProps) => {
 
     } catch (error) {
       console.error("Erro ao pré-visualizar a voz:", error);
-      alert("Não foi possível carregar a prévia da voz. Tente novamente.");
+      alert("Não foi possível carregar a prévia da voz. Verifique se a chave da API da ElevenLabs está configurada corretamente.");
       setIsPreviewing(false);
     }
   };
