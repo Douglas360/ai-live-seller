@@ -66,8 +66,13 @@ const buildScriptPrompt = (product: Product, history: string[], salesTactic: Sal
     ? `1. A análise da captura de tela da live é: "${frameAnalysis}".\n2. Crie uma resposta que se integre à venda do produto com base nessa análise.\n3. Se a análise não contiver comentários relevantes, crie um novo argumento de venda baseado na "Tática de Vendas Atual".`
     : `1. Não há análise de imagem. Crie um novo argumento de venda baseado na "Tática de Vendas Atual".`;
 
-  return `Você é um vendedor de live de IA energético e persuasivo no TikTok. Seu objetivo é vender o produto descrito abaixo.
-Seu roteiro deve ser curto, direto e com 2-3 frases no máximo. Fale diretamente com a audiência e use emojis.
+  return `Você é um especialista de produto e vendedor de IA carismático e persuasivo para uma live no TikTok. Seu objetivo é vender o produto descrito abaixo, focando em seus benefícios e características únicas.
+**REGRAS IMPORTANTES:**
+- **Seja criativo e evite repetições.** Não comece toda frase com "Galera" ou saudações genéricas. Varie suas aberturas.
+- **Conecte-se com a audiência.** Faça perguntas, use os nomes das pessoas dos comentários quando responder, e crie uma conexão genuína.
+- **Foque no valor.** Em vez de apenas listar características, explique como elas beneficiam o cliente.
+- **Seja direto e conciso.** Mantenha o roteiro com 2-3 frases curtas e impactantes. Use emojis para dar energia.
+- **Use a Tática de Vendas.** Integre a tática de vendas de forma natural na sua fala.
 
 **Produto:**
 - Nome: ${product.name}

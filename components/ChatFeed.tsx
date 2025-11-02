@@ -20,7 +20,7 @@ const ChatFeed = ({ comments }: ChatFeedProps) => {
   }, [comments]);
   
   return (
-    <div ref={scrollRef} className="h-full overflow-y-auto space-y-2 pr-2" style={{ maskImage: 'linear-gradient(to top, black 85%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to top, black 85%, transparent 100%)' }}>
+    <div ref={scrollRef} className="h-full overflow-y-auto space-y-2 p-4" style={{ maskImage: 'linear-gradient(to top, black 85%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to top, black 85%, transparent 100%)' }}>
       {comments.map((comment) => {
         const colorIndex = comment.username.length % USERNAME_COLORS.length;
         const colorClass = USERNAME_COLORS[colorIndex];

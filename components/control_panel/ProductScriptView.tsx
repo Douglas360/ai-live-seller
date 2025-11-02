@@ -63,7 +63,7 @@ const ProductScriptView = ({ script, onEditSegment, onDeleteSegment, onAddSegmen
 
   return (
     <>
-        <div className="h-full flex flex-col overflow-hidden">
+        <div className="h-full flex flex-col overflow-hidden p-4">
             <div className="flex-shrink-0 mb-4 flex justify-between items-center">
                 <div>
                     <h3 className="text-lg font-bold text-text-light">Product Script</h3>

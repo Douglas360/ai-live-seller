@@ -49,7 +49,7 @@ const ControlPanel = ({
       </div>
 
       {/* Content */}
-      <div className="flex-grow p-4 min-h-0">
+      <div className="flex-grow min-h-0">
         {activeTab === 'script' && 
             <ProductScriptView 
                 script={script} 

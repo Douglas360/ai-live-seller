@@ -102,7 +102,7 @@ const drillProduct: Product = {
   id: 'prod_parafusadeira_48v',
   name: 'Parafusadeira e Furadeira 48 Volts 2 Baterias Com Maleta e Acessórios Completo',
   regularPrice: 360.00,
-  salePrice: 131.00,
+  salePrice: 145.00,
   description: `A Parafusadeira Furadeira 48V com 2 Baterias, Maleta e Acessórios é a ferramenta perfeita para quem busca potência, praticidade e versatilidade no dia a dia. Ideal tanto para uso doméstico quanto profissional, ela combina alto desempenho com um design ergonômico e moderno.
 
 Equipada com duas baterias recarregáveis de longa duração, oferece autonomia para realizar diversos trabalhos sem interrupções. Seu motor de torque ajustável garante força suficiente para furar madeira, metal, plástico e até pequenas alvenarias, além de apertar e soltar parafusos com rapidez e precisão.

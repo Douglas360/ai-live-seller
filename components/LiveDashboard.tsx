@@ -235,7 +235,11 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
   useEffect(() => {
     try {
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        audioContextRef.current = new AudioContext();
+        const contextOptions: AudioContextOptions = {};
+        if (session.voice.provider === 'google') {
+          contextOptions.sampleRate = 24000;
+        }
+        audioContextRef.current = new AudioContext(contextOptions);
     } catch (e) { console.error("Web Audio API is not supported.", e); }
     
     activeLoopsRef.current = { generation: true, playback: true };
@@ -406,7 +410,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
   if (!isScreenShared) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center bg-secondary rounded-xl border border-border-color p-8">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-accent mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+          <svg xmlns="http://www.w.org/2000/svg" className="h-16 w-16 text-accent mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
           <h2 className="text-2xl font-bold text-text-light mb-2">Share your screen to begin</h2>
           <p className="text-text-dark mb-6 max-w-md">For the AI to see comments and interact with the audience, you need to share your TikTok live stream screen.</p>
           <Button onClick={handleShareScreen}>
