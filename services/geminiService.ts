@@ -1,13 +1,13 @@
-import { type Product, type Comment } from '../types';
+import { GoogleGenAI, Modality } from "@google/genai";
+import { type Product, type Comment, type AudioProvider } from '../types';
 
 const DEEPSEEK_API_KEY = 'sk-7776bc8c17c8497ea7317ec32de5aa9e';
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
 
 const OPENAI_API_KEY = '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';
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+const OPENAI_SPEECH_API_URL = 'https://api.openai.com/v1/audio/speech';
 
-const ELEVENLABS_API_KEY = 'sk_55a0f513c13bd5705851ed9a9b6760856e994088b16681c6'; // IMPORTANTE: Substitua pela sua chave de API da ElevenLabs.
-const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
 
 export type SalesTactic = 'focus_quality' | 'create_urgency' | 'social_proof' | 'highlight_promo';
 
@@ -162,58 +162,90 @@ export const generateNarrationBlock = async (
   }
 };
 
-export const generateSpeech = async (text: string, voiceId: string): Promise<string> => {
-  if (!text || text.trim().length === 0) {
-    throw new Error("Cannot generate speech from empty text.");
-  }
-  // FIX: Removed redundant check for placeholder API key which caused a TypeScript error.
-  if (!ELEVENLABS_API_KEY) {
-      throw new Error("A chave da API da ElevenLabs não está configurada. Adicione-a em services/geminiService.ts");
-  }
-
-  const payload = {
-    text: text,
-    model_id: "eleven_multilingual_v2",
-    voice_settings: {
-      stability: 0.5,
-      similarity_boost: 0.75,
-      style: 0.1,
-      use_speaker_boost: true
-    }
-  };
-
-  try {
-    const response = await fetch(`${ELEVENLABS_API_URL}/${voiceId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'xi-api-key': ELEVENLABS_API_KEY,
-        'Accept': 'audio/mpeg'
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`ElevenLabs API error: ${response.status} ${response.statusText} - ${errorBody}`);
-    }
-
-    const audioBlob = await response.blob();
-    
-    return new Promise<string>((resolve, reject) => {
+const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
             const base64data = reader.result as string;
-            // remove o prefixo "data:audio/mpeg;base64,"
+            // Remove the data URL prefix (e.g., "data:audio/mpeg;base64,")
             resolve(base64data.split(',')[1]);
         };
         reader.onerror = reject;
-        reader.readAsDataURL(audioBlob);
+        reader.readAsDataURL(blob);
     });
+};
 
-  } catch (error) {
-    console.error(`Error generating speech from ElevenLabs for text "${text}":`, error);
-    // Re-throw the error to be handled by the UI layer.
-    throw error;
+export const generateSpeech = async (text: string, voiceId: string, provider: AudioProvider): Promise<string> => {
+  if (!text || text.trim().length === 0) {
+    throw new Error("Cannot generate speech from empty text.");
   }
+
+  if (provider === 'openai') {
+    if (!OPENAI_API_KEY) {
+        throw new Error("A chave da API da OpenAI não está configurada. Adicione-a em services/geminiService.ts");
+    }
+
+    const payload = {
+      model: "tts-1-hd",
+      voice: voiceId,
+      input: text,
+    };
+
+    try {
+      const response = await fetch(OPENAI_SPEECH_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+          const errorBody = await response.text();
+          throw new Error(`OpenAI Speech API error: ${response.status} ${response.statusText} - ${errorBody}`);
+      }
+      
+      const audioBlob = await response.blob();
+      const base64Audio = await blobToBase64(audioBlob);
+      return base64Audio;
+
+    } catch (error) {
+      console.error(`Error generating speech from OpenAI for text "${text}":`, error);
+      throw error;
+    }
+  } else if (provider === 'google') {
+    if (!process.env.API_KEY) {
+        throw new Error("A chave da API do Google não está configurada. Verifique as variáveis de ambiente.");
+    }
+
+    try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash-preview-tts",
+            contents: [{ parts: [{ text: text }] }],
+            config: {
+                responseModalities: [Modality.AUDIO],
+                speechConfig: {
+                    voiceConfig: {
+                        prebuiltVoiceConfig: { voiceName: voiceId },
+                    },
+                },
+            },
+        });
+        
+        const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+        if (!base64Audio) {
+            throw new Error("A API do Google não retornou dados de áudio.");
+        }
+        return base64Audio;
+
+    } catch(error) {
+        console.error(`Error generating speech from Google for text "${text}":`, error);
+        throw error;
+    }
+  }
+  
+  throw new Error(`Provedor de áudio desconhecido: ${provider}`);
 };

@@ -119,7 +119,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
     return new Promise<void>(async (resolve, reject) => {
         try {
             const audioBytes = decode(base64Audio);
-            const audioBuffer = await decodeAudioData(audioBytes, audioContextRef.current!);
+            const audioBuffer = await decodeAudioData(audioBytes, audioContextRef.current!, session.voice.provider);
             
             if (!activeLoopsRef.current.playback || !audioContextRef.current || audioContextRef.current.state === 'closed') {
                 return reject(new Error("Playback stopped post-decode"));
@@ -135,7 +135,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
             reject(error);
         }
     });
-  }, [onError]);
+  }, [onError, session.voice.provider]);
 
   const updateSegmentStatus = (segmentId: string, status: SegmentStatus) => {
     setScript(prev => prev.map(s => s.id === segmentId ? { ...s, status } : s));
@@ -160,7 +160,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
     if (sanitizedTextLines.length === 0) return;
 
     try {
-        const audioPromises = sanitizedTextLines.map(line => generateSpeech(line, session.voice.id));
+        const audioPromises = sanitizedTextLines.map(line => generateSpeech(line, session.voice.id, session.voice.provider));
         const newAudioData = await Promise.all(audioPromises);
 
         setScript(prev => prev.map(s => 
@@ -181,7 +181,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
             onError("An unknown error occurred while updating the script.");
         }
     }
-  }, [script, session.voice.id, onError]);
+  }, [script, session.voice.id, session.voice.provider, onError]);
 
   const handleAddSegment = useCallback(async (text: string) => {
     const originalTextLines = text.split('\n').filter(line => line.trim() !== '');
@@ -192,7 +192,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
     if (sanitizedTextLines.length === 0) return;
 
     try {
-        const audioPromises = sanitizedTextLines.map(line => generateSpeech(line, session.voice.id));
+        const audioPromises = sanitizedTextLines.map(line => generateSpeech(line, session.voice.id, session.voice.provider));
         const audioData = await Promise.all(audioPromises);
         
         const newSegment: SpeechSegment = {
@@ -214,7 +214,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
             onError("An unknown error occurred while adding the script.");
         }
     }
-  }, [session.voice.id, onError]);
+  }, [session.voice.id, session.voice.provider, onError]);
 
   const handleReorderScript = useCallback((startIndex: number, endIndex: number) => {
     setScript(prevScript => {
@@ -293,7 +293,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
                     .filter(line => line.length > 0);
 
                 if (sanitizedTextLines.length > 0) {
-                    const audioPromises = sanitizedTextLines.map(line => generateSpeech(line, session.voice.id));
+                    const audioPromises = sanitizedTextLines.map(line => generateSpeech(line, session.voice.id, session.voice.provider));
                     const audioData = await Promise.all(audioPromises);
                     if (!activeLoopsRef.current.generation) break;
 
@@ -401,7 +401,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
         audioContextRef.current = null;
       }
     };
-  }, [isScreenShared, isPaused, playAudio, session.product, session.voice.id, processedCommentKeys, isLoading, onError]);
+  }, [isScreenShared, isPaused, playAudio, session.product, session.voice.id, session.voice.provider, processedCommentKeys, isLoading, onError]);
 
   if (!isScreenShared) {
     return (

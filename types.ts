@@ -1,3 +1,5 @@
+export type AudioProvider = 'openai' | 'google';
+
 export interface Product {
   id: string;
   name: string;
@@ -15,6 +17,7 @@ export interface VoiceOption {
   id: string;
   name: string;
   style: string;
+  provider: AudioProvider;
 }
 
 export interface LiveSession {

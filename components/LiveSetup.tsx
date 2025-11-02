@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { VOICE_OPTIONS } from '../constants';
-import { type LiveSession, type Product, type VoiceOption } from '../types';
+import { type LiveSession, type Product, type VoiceOption, type AudioProvider } from '../types';
 import Button from './ui/Button';
 import Select from './ui/Select';
 import ProductCard from './ProductCard';
@@ -17,8 +17,11 @@ interface LiveSetupProps {
 
 const LiveSetup = ({ products, onStartLive, onAddProduct }: LiveSetupProps) => {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(products[0]?.id || null);
-  const [voiceOptions, setVoiceOptions] = useState<VoiceOption[]>(VOICE_OPTIONS);
-  const [selectedVoiceId, setSelectedVoiceId] = useState<string>(voiceOptions[0].id);
+  const [audioProvider, setAudioProvider] = useState<AudioProvider>('openai');
+  
+  const filteredVoiceOptions = VOICE_OPTIONS.filter(v => v.provider === audioProvider);
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string>(filteredVoiceOptions.length > 0 ? filteredVoiceOptions[0].id : '');
+
   const [backgroundImageUrl, setBackgroundImageUrl] = useState('https://picsum.photos/seed/bg/1280/720'); // Not in UI, but needed for session
   const [title, setTitle] = useState('Minha Super Live de Vendas!'); // Not in UI, but needed for session
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +30,16 @@ const LiveSetup = ({ products, onStartLive, onAddProduct }: LiveSetupProps) => {
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const activeAudioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  
+  useEffect(() => {
+    // When provider changes, reset the selected voice
+    const newFilteredOptions = VOICE_OPTIONS.filter(v => v.provider === audioProvider);
+    if (newFilteredOptions.length > 0) {
+      setSelectedVoiceId(newFilteredOptions[0].id);
+    } else {
+      setSelectedVoiceId('');
+    }
+  }, [audioProvider]);
 
   useEffect(() => {
     // Cleanup audio context on component unmount
@@ -48,7 +61,12 @@ const LiveSetup = ({ products, onStartLive, onAddProduct }: LiveSetupProps) => {
 
     setIsLoading(true);
     setTimeout(() => {
-      const selectedVoice = voiceOptions.find(v => v.id === selectedVoiceId) || voiceOptions[0];
+      const selectedVoice = VOICE_OPTIONS.find(v => v.id === selectedVoiceId);
+      if (!selectedVoice) {
+          alert('Voz inválida selecionada.');
+          setIsLoading(false);
+          return;
+      }
       onStartLive({
         title,
         product: selectedProduct,
@@ -76,12 +94,12 @@ const LiveSetup = ({ products, onStartLive, onAddProduct }: LiveSetupProps) => {
     setIsPreviewing(true);
 
     try {
-      const selectedVoice = voiceOptions.find(v => v.id === selectedVoiceId);
+      const selectedVoice = VOICE_OPTIONS.find(v => v.id === selectedVoiceId);
       if (!selectedVoice) throw new Error("Voz selecionada não encontrada.");
       
       const sampleText = "Olá! Bem-vindo à nossa live de vendas. Este é um teste da minha voz.";
       
-      const base64Audio = await generateSpeech(sampleText, selectedVoice.id);
+      const base64Audio = await generateSpeech(sampleText, selectedVoice.id, selectedVoice.provider);
       if (!base64Audio) throw new Error("Falha ao gerar o áudio da prévia.");
 
       if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
@@ -92,7 +110,7 @@ const LiveSetup = ({ products, onStartLive, onAddProduct }: LiveSetupProps) => {
       }
 
       const audioBytes = decode(base64Audio);
-      const audioBuffer = await decodeAudioData(audioBytes, audioContextRef.current);
+      const audioBuffer = await decodeAudioData(audioBytes, audioContextRef.current, selectedVoice.provider);
 
       const source = audioContextRef.current.createBufferSource();
       source.buffer = audioBuffer;
@@ -106,7 +124,8 @@ const LiveSetup = ({ products, onStartLive, onAddProduct }: LiveSetupProps) => {
 
     } catch (error) {
       console.error("Erro ao pré-visualizar a voz:", error);
-      alert("Não foi possível carregar a prévia da voz. Verifique se a chave da API da ElevenLabs está configurada corretamente.");
+      const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
+      alert(`Erro ao pré-visualizar a voz:\n${errorMessage}`);
       setIsPreviewing(false);
     }
   };
@@ -129,16 +148,25 @@ const LiveSetup = ({ products, onStartLive, onAddProduct }: LiveSetupProps) => {
           
           <div className="bg-secondary rounded-xl border border-border-color p-4 space-y-4">
               <h3 className="text-lg font-semibold text-text-light px-2">Configurações de Voz</h3>
+
+              <div className="space-y-2 px-2">
+                 <label htmlFor="audio-provider" className="block text-sm font-medium text-text-dark">Provedor de Áudio</label>
+                 <Select id="audio-provider" value={audioProvider} onChange={(e) => setAudioProvider(e.target.value as AudioProvider)}>
+                    <option value="openai">OpenAI TTS</option>
+                    <option value="google">Google Text To Speech</option>
+                 </Select>
+              </div>
+
               <div className="flex items-center space-x-2">
                 <Select id="voice" value={selectedVoiceId} onChange={(e) => setSelectedVoiceId(e.target.value)} className="flex-grow">
-                    {voiceOptions.map(voice => (
+                    {filteredVoiceOptions.map(voice => (
                        <option key={voice.id} value={voice.id}>{voice.name} - {voice.style}</option>
                     ))}
                 </Select>
                  <button 
                     type="button" 
                     onClick={handlePreviewVoice}
-                    disabled={isPreviewing}
+                    disabled={isPreviewing || !selectedVoiceId}
                     className="flex-shrink-0 p-3 bg-primary hover:bg-accent disabled:opacity-50 disabled:cursor-wait rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-accent"
                     aria-label="Ouvir prévia da voz"
                 >
