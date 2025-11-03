@@ -77,7 +77,7 @@ const ProductScriptView = ({ script, onEditSegment, onDeleteSegment, onAddSegmen
                      <span>Add Script</span>
                 </button>
             </div>
-            <div className="flex-grow overflow-y-auto space-y-3 pr-2">
+            <div className="flex-grow min-h-0 overflow-y-auto space-y-3 pr-2">
                 {reversedScript.length > 0 ? (
                     reversedScript.map((segment, index) => (
                         <SpeechSegmentCard 

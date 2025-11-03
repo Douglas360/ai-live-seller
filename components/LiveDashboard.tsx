@@ -328,6 +328,10 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
                     };
                     
                     setScript(prev => [...prev, newSegment]);
+                    
+                    // Add a delay after generating a new script to allow narration to catch up.
+                    await new Promise(r => setTimeout(r, 5000));
+
 
                 } else {
                     console.warn("Generated script contained no valid text lines after sanitization. Skipping segment.");
@@ -491,7 +495,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
         </div>
       </div>
 
-      <div className="lg:col-span-1 h-full">
+      <div className="lg:col-span-1 flex flex-col min-h-0">
         <ControlPanel 
           script={script}
           comments={comments}

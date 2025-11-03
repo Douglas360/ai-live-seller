@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import LiveSetup from './components/LiveSetup';
@@ -102,7 +103,7 @@ const drillProduct: Product = {
   id: 'prod_parafusadeira_48v',
   name: 'Parafusadeira e Furadeira 48 Volts 2 Baterias Com Maleta e Acessórios Completo',
   regularPrice: 360.00,
-  salePrice: 121.00,
+  salePrice: 145.00,
   description: `A Parafusadeira Furadeira 48V com 2 Baterias, Maleta e Acessórios é a ferramenta perfeita para quem busca potência, praticidade e versatilidade no dia a dia. Ideal tanto para uso doméstico quanto profissional, ela combina alto desempenho com um design ergonômico e moderno.
 
 Equipada com duas baterias recarregáveis de longa duração, oferece autonomia para realizar diversos trabalhos sem interrupções. Seu motor de torque ajustável garante força suficiente para furar madeira, metal, plástico e até pequenas alvenarias, além de apertar e soltar parafusos com rapidez e precisão.
@@ -201,24 +202,28 @@ const App = () => {
   };
 
   return (
-    <div className="h-screen bg-primary font-sans flex flex-col">
-      <Header isLive={!!liveSession} startTime={liveStartTime} />
-      {error && <ErrorToast message={error} onClose={() => setError(null)} />}
-      <main className="p-4 md:p-8 flex-grow relative">
-        {liveSession ? (
-          <LiveDashboard 
-            session={liveSession} 
-            onEndLive={handleEndLive}
-            onError={handleError}
-          />
-        ) : (
-          <LiveSetup 
-            products={products}
-            onStartLive={handleStartLive} 
-            onAddProduct={handleAddNewProduct}
-          />
-        )}
-      </main>
+    <div className="h-screen bg-primary font-sans flex items-center justify-center p-4">
+      <div className="w-full h-full bg-primary flex flex-col border border-border-color rounded-xl overflow-hidden shadow-2xl max-w-screen-2xl">
+        <Header isLive={!!liveSession} startTime={liveStartTime} />
+        {error && <ErrorToast message={error} onClose={() => setError(null)} />}
+        <main className="flex-grow relative overflow-hidden p-4 md:p-8">
+          <div className="h-full overflow-y-auto">
+              {liveSession ? (
+              <LiveDashboard 
+                  session={liveSession} 
+                  onEndLive={handleEndLive}
+                  onError={handleError}
+              />
+              ) : (
+              <LiveSetup 
+                  products={products}
+                  onStartLive={handleStartLive} 
+                  onAddProduct={handleAddNewProduct}
+              />
+              )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

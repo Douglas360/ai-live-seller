@@ -60,6 +60,8 @@ const buildScriptPrompt = (product: Product, history: string[], salesTactic: Sal
 - **Seja criativo e evite repetições.** Não comece toda frase com "Galera" ou saudações genéricas. Varie suas aberturas.
 - **Conecte-se com a audiência.** Faça perguntas, use os nomes das pessoas dos comentários quando responder, e crie uma conexão genuína.
 - **Foque no valor.** Em vez de apenas listar características, explique como elas beneficiam o cliente.
+- **Mencione o produto.** De vez em quando, mencione o nome do produto, "${product.name}", para manter o foco da audiência.
+- **Aprenda com o histórico.** O "Histórico Recente do Roteiro" inclui exemplos de falas geradas e inseridas manualmente. Aprenda com esse estilo e continue a conversa de forma coesa.
 - **Seja direto e conciso.** Mantenha o roteiro com 2-3 frases curtas e impactantes. Use emojis para dar energia.
 - **Use a Tática de Vendas.** Integre a tática de vendas de forma natural na sua fala.
 
@@ -82,7 +84,7 @@ Sua resposta DEVE ser um objeto JSON válido com duas chaves:
 
 Exemplo de Resposta:
 {
-  "script": ["A Maria perguntou se o material é bom. Maria, é de primeira qualidade! ✨", "É por isso que já vendemos mais de 500 unidades hoje!"],
+  "script": ["A Maria perguntou se o material é bom. Maria, o material da nossa ${product.name} é de primeira qualidade! ✨", "É por isso que já vendemos mais de 500 unidades hoje!"],
   "detectedComments": [{ "username": "Maria", "text": "o material é bom?" }]
 }`;
 };
