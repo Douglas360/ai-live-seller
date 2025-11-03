@@ -17,7 +17,7 @@ interface LiveSetupProps {
 
 const LiveSetup = ({ products, onStartLive, onAddProduct }: LiveSetupProps) => {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(products[0]?.id || null);
-  const [audioProvider, setAudioProvider] = useState<AudioProvider>('openai');
+  const [audioProvider, setAudioProvider] = useState<AudioProvider>('google');
   
   const filteredVoiceOptions = VOICE_OPTIONS.filter(v => v.provider === audioProvider);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>(filteredVoiceOptions.length > 0 ? filteredVoiceOptions[0].id : '');

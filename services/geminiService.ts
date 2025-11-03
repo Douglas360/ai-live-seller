@@ -5,52 +5,41 @@ const DEEPSEEK_API_KEY = 'sk-7776bc8c17c8497ea7317ec32de5aa9e';
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
 
 const OPENAI_API_KEY = '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';
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const OPENAI_SPEECH_API_URL = 'https://api.openai.com/v1/audio/speech';
 
 
 export type SalesTactic = 'focus_quality' | 'create_urgency' | 'social_proof' | 'highlight_promo';
 
 
-const analyzeFrameWithOpenAI = async (frameData: string): Promise<string> => {
-    const payload = {
-        model: "gpt-4o",
-        messages: [
-            {
-                role: "user",
-                content: [
-                    {
-                        type: "text",
-                        text: "Analise esta captura de tela de uma live do TikTok. Identifique quaisquer comentários ou perguntas de usuários visíveis na imagem. Descreva os comentários que você encontrar em um formato de texto simples. Se não houver comentários, diga 'Nenhum comentário detectado'. Foque apenas nos comentários dos espectadores."
-                    },
-                    {
-                        type: "image_url",
-                        image_url: {
-                            url: frameData,
-                        }
-                    }
-                ]
-            }
-        ],
-        max_tokens: 300
-    };
+const analyzeFrameWithGemini = async (frameData: string): Promise<string> => {
+    if (!process.env.API_KEY) {
+        throw new Error("A chave da API do Google não está configurada. Verifique as variáveis de ambiente.");
+    }
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-    const response = await fetch(OPENAI_API_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorBody}`);
+    const base64Data = frameData.split(',')[1];
+    if (!base64Data) {
+        console.warn("Não foi possível extrair dados base64 de frameData.");
+        return "Nenhum comentário detectado.";
     }
 
-    const data = await response.json();
-    return data.choices[0].message.content;
+    const imagePart = {
+      inlineData: {
+        mimeType: 'image/jpeg',
+        data: base64Data,
+      },
+    };
+
+    const textPart = {
+        text: "Analise esta captura de tela de uma live do TikTok. Identifique quaisquer comentários ou perguntas de usuários visíveis na imagem. Descreva os comentários que você encontrar em um formato de texto simples. Se não houver comentários, diga 'Nenhum comentário detectado'. Foque apenas nos comentários dos espectadores."
+    };
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: { parts: [imagePart, textPart] },
+    });
+
+    return response.text;
 };
 
 
@@ -109,9 +98,9 @@ export const generateNarrationBlock = async (
     let frameAnalysis: string | null = null;
     if (frameData) {
         try {
-            frameAnalysis = await analyzeFrameWithOpenAI(frameData);
+            frameAnalysis = await analyzeFrameWithGemini(frameData);
         } catch (error) {
-            console.error("Error analyzing frame with OpenAI:", error);
+            console.error("Error analyzing frame with Gemini:", error);
             // Don't re-throw; proceed with a failure message so DeepSeek knows what happened.
             frameAnalysis = "A análise da imagem falhou.";
         }
@@ -161,7 +150,7 @@ export const generateNarrationBlock = async (
     }
     throw new Error("Invalid JSON structure from DeepSeek response.");
   } catch (error) {
-    console.error("Error in generateNarrationBlock (DeepSeek/OpenAI):", error);
+    console.error("Error in generateNarrationBlock (DeepSeek/Gemini):", error);
     // Re-throw the error to be handled by the UI layer.
     throw error;
   }

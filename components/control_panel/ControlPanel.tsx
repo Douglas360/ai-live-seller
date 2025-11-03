@@ -7,6 +7,8 @@ interface ControlPanelProps {
   script: SpeechSegment[];
   comments: Comment[];
   isPaused: boolean;
+  isCommentAnalysisActive: boolean;
+  onToggleCommentAnalysis: () => void;
   onPauseToggle: () => void;
   onStop: () => void;
   onEditSegment: (segmentId: string, newText: string) => void;
@@ -21,6 +23,8 @@ const ControlPanel = ({
   script, 
   comments, 
   isPaused, 
+  isCommentAnalysisActive,
+  onToggleCommentAnalysis,
   onPauseToggle, 
   onStop,
   onEditSegment,
@@ -29,6 +33,10 @@ const ControlPanel = ({
   onReorderScript,
 }: ControlPanelProps) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('script');
+  
+  const visionButtonClasses = isCommentAnalysisActive
+    ? 'bg-blue-800 text-blue-100 hover:bg-blue-900 focus:ring-blue-600'
+    : 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500';
 
   return (
     <div className="bg-secondary border border-border-color rounded-xl shadow-lg h-full flex flex-col">
@@ -63,19 +71,27 @@ const ControlPanel = ({
       </div>
 
       {/* Actions */}
-      <div className="flex-shrink-0 border-t border-border-color p-4 flex items-center space-x-3">
+      <div className="flex-shrink-0 border-t border-border-color p-4 space-y-3">
         <button
-          onClick={onPauseToggle}
-          className="w-full bg-yellow-500 text-black hover:bg-yellow-600 px-6 py-3 font-bold rounded-lg shadow-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          onClick={onToggleCommentAnalysis}
+          className={`w-full px-6 py-3 font-bold rounded-lg shadow-md transition-all duration-300 focus:outline-none focus:ring-2 ${visionButtonClasses}`}
         >
-          {isPaused ? 'Resume' : 'Pause'}
+          {isCommentAnalysisActive ? 'Desativar Visão da IA' : 'Ativar Visão da IA'}
         </button>
-        <button
-          onClick={onStop}
-          className="w-full bg-red-600 text-white hover:bg-red-700 px-6 py-3 font-bold rounded-lg shadow-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-500"
-        >
-          Stop Streaming
-        </button>
+        <div className="flex items-center space-x-3">
+            <button
+            onClick={onPauseToggle}
+            className="w-full bg-yellow-500 text-black hover:bg-yellow-600 px-6 py-3 font-bold rounded-lg shadow-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            >
+            {isPaused ? 'Continuar' : 'Pausar'}
+            </button>
+            <button
+            onClick={onStop}
+            className="w-full bg-red-600 text-white hover:bg-red-700 px-6 py-3 font-bold rounded-lg shadow-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-500"
+            >
+            Parar Live
+            </button>
+        </div>
       </div>
     </div>
   );

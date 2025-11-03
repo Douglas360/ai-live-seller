@@ -26,6 +26,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isCommentAnalysisActive, setIsCommentAnalysisActive] = useState(false);
   const [script, setScript] = useState<SpeechSegment[]>([]);
   const [isScreenShared, setIsScreenShared] = useState(false);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
@@ -39,14 +40,31 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
 
   const handleShareScreen = async () => {
     try {
+      // Create and resume AudioContext on user interaction to prevent it from starting in a suspended state.
+      if (!audioContextRef.current) {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        const contextOptions: AudioContextOptions = {};
+        if (session.voice.provider === 'google') {
+          contextOptions.sampleRate = 24000;
+        }
+        audioContextRef.current = new AudioContext(contextOptions);
+      }
+      
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+
       const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
       setMediaStream(stream);
       setIsScreenShared(true);
-      // FIX: Corrected the try...catch syntax. This was causing all subsequent scope-related errors in the file.
     } catch (error) {
       console.error("Error accessing screen share:", error);
       onError("Failed to start screen sharing. Please check browser permissions.");
     }
+  };
+
+  const handleToggleCommentAnalysis = () => {
+    setIsCommentAnalysisActive(prev => !prev);
   };
 
   useEffect(() => {
@@ -233,14 +251,9 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
 
 
   useEffect(() => {
-    try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        const contextOptions: AudioContextOptions = {};
-        if (session.voice.provider === 'google') {
-          contextOptions.sampleRate = 24000;
-        }
-        audioContextRef.current = new AudioContext(contextOptions);
-    } catch (e) { console.error("Web Audio API is not supported.", e); }
+    if (!isScreenShared) {
+      return;
+    }
     
     activeLoopsRef.current = { generation: true, playback: true };
 
@@ -256,7 +269,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
           return prevScript;
         });
 
-        if (shouldGenerate && isScreenShared) {
+        if (shouldGenerate) {
             try {
                 let recentHistory: string[] = [];
                 setScript(prevScript => {
@@ -267,7 +280,7 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
                 
                 const salesTactic = SALES_TACTICS[Math.floor(Math.random() * SALES_TACTICS.length)];
                 
-                const frameForAnalysis = currentFrameRef.current;
+                const frameForAnalysis = isCommentAnalysisActive ? currentFrameRef.current : null;
                 currentFrameRef.current = null; // Consume the frame
 
                 const { script: textLines, comments: newlyRespondedComments } = await generateNarrationBlock(session.product, recentHistory, salesTactic, frameForAnalysis, processedCommentKeys);
@@ -400,17 +413,24 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
 
     return () => {
       activeLoopsRef.current = { generation: false, playback: false };
+    };
+  }, [isScreenShared, isPaused, playAudio, session.product, session.voice.id, session.voice.provider, processedCommentKeys, isLoading, onError, isCommentAnalysisActive]);
+
+  // This effect handles the lifecycle of the AudioContext, ensuring it's closed on unmount.
+  useEffect(() => {
+    return () => {
       if (audioContextRef.current) {
         audioContextRef.current.close().catch(console.error);
         audioContextRef.current = null;
       }
     };
-  }, [isScreenShared, isPaused, playAudio, session.product, session.voice.id, session.voice.provider, processedCommentKeys, isLoading, onError]);
+  }, []);
+
 
   if (!isScreenShared) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center bg-secondary rounded-xl border border-border-color p-8">
-          <svg xmlns="http://www.w.org/2000/svg" className="h-16 w-16 text-accent mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-accent mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
           <h2 className="text-2xl font-bold text-text-light mb-2">Share your screen to begin</h2>
           <p className="text-text-dark mb-6 max-w-md">For the AI to see comments and interact with the audience, you need to share your TikTok live stream screen.</p>
           <Button onClick={handleShareScreen}>
@@ -455,6 +475,10 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
                   <span className="font-semibold text-text-dark">AI Paused:</span>
                   <span className={`font-bold ${isPaused ? 'text-yellow-400' : 'text-text-light'}`}>{isPaused ? 'Yes' : 'No'}</span>
                 </div>
+                 <div className="flex items-center space-x-2">
+                  <span className="font-semibold text-text-dark">AI Vision:</span>
+                  <span className={`font-bold ${isCommentAnalysisActive ? 'text-blue-400' : 'text-text-light'}`}>{isCommentAnalysisActive ? 'Active' : 'Inactive'}</span>
+                </div>
               </div>
               <div className="bg-primary p-4 rounded-lg flex-grow">
                  <p className="text-sm text-text-dark">Current Line:</p>
@@ -472,6 +496,8 @@ const LiveDashboard = ({ session, onEndLive, onError }: LiveDashboardProps) => {
           script={script}
           comments={comments}
           isPaused={isPaused}
+          isCommentAnalysisActive={isCommentAnalysisActive}
+          onToggleCommentAnalysis={handleToggleCommentAnalysis}
           onPauseToggle={() => setIsPaused(p => !p)}
           onStop={onEndLive}
           onEditSegment={handleEditSegment}
