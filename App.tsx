@@ -6,6 +6,40 @@ import LiveDashboard from './components/LiveDashboard';
 import { type LiveSession, type Product } from './types';
 import ErrorToast from './components/ui/ErrorToast';
 
+const thermalCupProduct: Product = {
+  id: 'prod_copo_termico_romantic_crown',
+  name: 'Romantic Crown Copo Térmico com Canudo Tampa e Alça 1,18L',
+  regularPrice: 99.00,
+  salePrice: 49.00,
+  description: `Romantic Crown Copo Térmico com Canudo Tampa e Alça 1,18L, Copos Garrafas Termico para viagem vácuo dupla camada aço inoxidável, Caneca Termica Cafe Água Chá,Presente, Fitness (Creme)
+【Tampa 100% à prova de vazamentos】Romantic Crown Copo Térmico 1,18l apresenta uma tampa à prova de vazamentos recém-atualizada e um design de torção de rosca dupla, tornando o copo totalmente hermético e à prova de suor. Ele pode suportar facilmente a vibração e os solavancos durante esportes ou viagens de carro e aproveitar a diversão de beber água!
+【Aço inoxidável a vácuo duplo】Romantic Crown Copo Termico produzido em 304 aço inoxidável com uma técnica de parede dupla e vácuo entre as paredes, conserva sua bebida por mais tempo. manter as bebidas frias por até 30 horas e quentes por até 8 horas,O aço 18/8 evita que os copos ou canecas fiquem com cheiro e gosto de bebidas e alimentos. Produto livre de BPA.
+【Caneca de viagem com Canudo e Tampa】Romantic Crown Copo Termico com Canudo e Alça,Essa caneca de vidro grande pode ser colocada com segurança na maioria dos porta-copos de carro, não é preciso se preocupar com ela quando estiver em uma viagem longa. A alça dessa caneca é muito confortável, você pode carregá-la facilmente em qualquer ocasião, como em casa, no escritório, na academia, no acampamento, nas férias, nos esportes, em viagens e assim por diante. Essa é sua melhor escolha.
+【Pode ser lavada na máquina de lavar louça e não contém BPA】 O interior eletropolido garante que a garrafa permaneça intacta, e o material resistente de alta qualidade faz com que a garrafa possa ser lavada na máquina de lavar louça, liberando suas mãos! A garrafa é livre de BPA e inodora, perfeita para qualquer cerveja, água, refrigerante, leite, café gelado, chá, bebidas mistas, até mesmo smoothies, qualquer bebida que você quiser.
+【Adequada para presentear】 Esta caneca de café é o presente perfeito para professores, médicos e motoristas que precisam beber muita água ou que não conseguem repor água facilmente. Também é ótima para o Dia dos Pais, Natal, Ação de Graças, Páscoa e outros feriados.`,
+  imageUrl: 'https://m.media-amazon.com/images/I/61JBhlv90eL._AC_SX679_.jpg',
+  sellerName: 'Utilidades Premium',
+  sellingPoints: [
+    '🔥 Promoção Imperdível! De R$99 por apenas R$49, só hoje!',
+    '💧 Tampa 100% à prova de vazamentos! Leve na bolsa ou no carro sem preocupação.',
+    '🧊 Mantém sua bebida gelada por até 30 horas e quente por até 8 horas!',
+    '✨ Feito de aço inoxidável 304, não pega cheiro e nem gosto!',
+    '🚗 Encaixe perfeito na maioria dos porta-copos de carro, ideal para viagens.',
+    '🧼 Fácil de limpar, pode ir na lava-louças e é livre de BPA, sua saúde em primeiro lugar!',
+    '🤚 Alça super confortável para levar para qualquer lugar: academia, trabalho, acampamento.',
+    '🎁 O presente perfeito para qualquer ocasião: Dia dos Pais, Natal, Aniversário!'
+  ],
+  reviews: [
+    'Copo maravilhoso! Realmente não vaza nada e conserva a água geladinha o dia todo. A cor é linda!',
+    'Melhor compra do ano. Levo para o trabalho todos os dias. A alça faz toda a diferença.',
+    'A qualidade é surpreendente pelo preço. Recomendo muito! Chegou antes do prazo.'
+  ],
+  variations: [
+    'Disponível em várias cores, clique na sacolinha para conferir!',
+    'Compre 2 e ganhe frete grátis para todo o Brasil!'
+  ]
+};
+
 const cushionCoverProduct: Product = {
   id: 'prod_natal_2024',
   name: 'Kit 4 Capas de Almofada Decorativas de Natal – Noite Feliz',
@@ -139,6 +173,37 @@ Compacta, leve e completa, essa parafusadeira é uma excelente escolha para quem
   ]
 };
 
+const laserLevelProduct: Product = {
+  id: 'prod_nivel_laser_4d_16',
+  name: 'Nível Laser 4d Profissional 16 Linhas Autonivelante Com Controle Remoto',
+  regularPrice: 699.00,
+  salePrice: 319.00,
+  description: `O Nível Laser 4D de 16 Linhas é a solução definitiva para medições precisas e trabalhos profissionais. Com um laser verde de alta visibilidade (comprimento de onda de 515 nm) e alcance de até 30 metros, garante resultados excepcionais mesmo em ambientes com alta luminosidade. Seu design robusto, com classificação IP54, proporciona resistência à água e durabilidade em condições desafiadoras. Equipado com duas baterias recarregáveis de 2400mAh, oferece autonomia prolongada para uso contínuo. O controle remoto infravermelho facilita ajustes precisos à distância, enquanto os suportes versáteis e a maleta de transporte tornam este dispositivo ideal para diferentes locais de trabalho. Seja para nivelamento, instalação ou construção, o Nível Laser 4D de 16 Linhas combina precisão, praticidade e inovação para transformar seus desafios de medição em soluções eficientes.`,
+  imageUrl: 'https://p16-oec-sg.ibyteimg.com/tos-alisg-i-aphluv4xwc-sg/b9c1922fa2fe488fb12bd6f6c1c85e6~tplv-aphluv4xwc-resize-webp:800:800.webp?dr=15584&t=555f072d&ps=933b5bde&shp=6ce186a1&shcp=e1be8f53&idc=my2&from=1826719393',
+  sellerName: 'Ferramentas PRO',
+  sellingPoints: [
+    '🔥 Mais de 50% OFF! De R$699 por apenas R$319, só enquanto durar o estoque!',
+    '🎯 Laser verde 16 linhas de alta visibilidade, perfeito para ambientes claros e longas distâncias (até 30m).',
+    '💧 À prova d\'água e poeira (IP54). Construído para aguentar o tranco do dia a dia na obra.',
+    '🔋 Duas baterias de longa duração! Trabalhe o dia inteiro sem se preocupar em recarregar.',
+    '🕹️ Controle remoto incluso para ajustes fáceis e rápidos à distância. Mais agilidade no seu trabalho!',
+    '✅ Autonivelante com precisão milimétrica (±1mm/7m). Acabamento profissional garantido!',
+    '🧰 Maleta completa com tripé, suporte magnético e plataforma elevatória. Tudo que você precisa em um só kit!',
+    '🛠️ Ideal para instalação de pisos, azulejos, forros, drywall, armários e muito mais!'
+  ],
+  reviews: [
+    'Ferramenta fantástica! O laser verde é muito forte, consigo ver até de dia. As baterias duram bastante e a maleta ajuda a manter tudo organizado.',
+    'Melhorou muito a qualidade e a velocidade do meu trabalho. O autonivelamento é rápido e preciso. Recomendo demais, vale cada centavo.',
+    'Chegou rápido e o kit é bem completo. O controle remoto é uma mão na roda, não preciso ficar subindo e descendo da escada pra ajustar.',
+    'Impressionado com a qualidade. Já usei na chuva e ele aguentou firme. Precisão nota 10.'
+  ],
+  variations: [
+    'Compre agora e ganhe um par de óculos de proteção verde!',
+    'Garantia estendida de 1 ano disponível, confira na sacolinha!',
+    'Frete grátis para todo o Brasil por tempo limitado!'
+  ]
+};
+
 
 const App = () => {
   const [liveSession, setLiveSession] = useState<LiveSession | null>(null);
@@ -170,7 +235,7 @@ const App = () => {
     } catch (error) {
       console.error('Error reading products from localStorage', error);
     }
-    return [cushionCoverProduct, wheyProduct, drillProduct];
+    return [laserLevelProduct, thermalCupProduct, cushionCoverProduct, wheyProduct, drillProduct];
   });
 
   useEffect(() => {
