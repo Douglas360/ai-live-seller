@@ -6,6 +6,36 @@ import LiveDashboard from './components/LiveDashboard';
 import { type LiveSession, type Product } from './types';
 import ErrorToast from './components/ui/ErrorToast';
 
+const modusBottleProduct: Product = {
+  id: 'prod_garrafa_modus_1700ml',
+  name: 'Modus Garrafa Térmica Isolada A Vácuo De Aço Inoxidável 1700ml',
+  regularPrice: 220.00,
+  salePrice: 80.00,
+  description: `Alça de transporte, Tampa com fechadura, À prova de derramamento, À prova de suor, À prova de vazamentos. Fabricado em aço inoxidável 304, garante resistência superior à corrosão e retenção de calor. Grande capacidade de 1700 ml para suas necessidades diárias de hidratação. Abertura conveniente com um toque para operação com uma mão. Configuração de canudo de grau alimentício, seguro e inodoro. Preservação duradoura do calor e do frio, mantém as bebidas quentes por 6-12 horas e as bebidas frias por 12-24 horas. Design da tampa com trava anti-vazamento para viajar com mais tranquilidade.`,
+  imageUrl: 'https://m.media-amazon.com/images/I/71mVbv8yMuL._AC_SX679_.jpg',
+  sellerName: 'Modus Brasil',
+  sellingPoints: [
+    '🔥 Super Oferta! De R$220 por apenas R$80, é só hoje!',
+    '💧 100% à prova de vazamentos com trava de segurança! Leve para onde quiser.',
+    '🧊 Bebida gelada por até 24 horas e quente por até 12 horas. Perfeita para qualquer estação!',
+    '💪 Capacidade gigante de 1.7L! Hidratação garantida o dia todo sem precisar reabastecer.',
+    '✨ Aço inoxidável 304 de alta qualidade, não pega cheiro e é super resistente.',
+    '👆 Abertura com um toque, beba sua água com apenas uma mão. Praticidade total!',
+    '🥤 Canudo de grau alimentício, seguro para sua saúde.',
+    '🚗 Alça de transporte super prática. Ideal para academia, viagens e trabalho.'
+  ],
+  reviews: [
+    'A melhor garrafa que já tive! A capacidade dela é incrível e realmente mantém a água gelada por muito tempo. Recomendo demais!',
+    'Comprei para levar para o treino e estou amando. A alça facilita muito o transporte e a trava é ótima, não vaza nada na mochila.',
+    'Qualidade excelente, superou minhas expectativas. O preço da promoção estava imperdível.'
+  ],
+  variations: [
+    'Disponível nas cores preto, branco e azul. Clique na sacolinha para escolher a sua!',
+    'Compre junto com nosso copo térmico e ganhe um desconto especial no kit!',
+    'Frete grátis para as últimas unidades!'
+  ]
+};
+
 const thermalCupProduct: Product = {
   id: 'prod_copo_termico_romantic_crown',
   name: 'Romantic Crown Copo Térmico com Canudo Tampa e Alça 1,18L',
@@ -137,7 +167,7 @@ const drillProduct: Product = {
   id: 'prod_parafusadeira_48v',
   name: 'Parafusadeira e Furadeira 48 Volts 2 Baterias Com Maleta e Acessórios Completo',
   regularPrice: 360.00,
-  salePrice: 145.00,
+  salePrice: 132.00,
   description: `A Parafusadeira Furadeira 48V com 2 Baterias, Maleta e Acessórios é a ferramenta perfeita para quem busca potência, praticidade e versatilidade no dia a dia. Ideal tanto para uso doméstico quanto profissional, ela combina alto desempenho com um design ergonômico e moderno.
 
 Equipada com duas baterias recarregáveis de longa duração, oferece autonomia para realizar diversos trabalhos sem interrupções. Seu motor de torque ajustável garante força suficiente para furar madeira, metal, plástico e até pequenas alvenarias, além de apertar e soltar parafusos com rapidez e precisão.
@@ -179,7 +209,7 @@ const laserLevelProduct: Product = {
   regularPrice: 699.00,
   salePrice: 319.00,
   description: `O Nível Laser 4D de 16 Linhas é a solução definitiva para medições precisas e trabalhos profissionais. Com um laser verde de alta visibilidade (comprimento de onda de 515 nm) e alcance de até 30 metros, garante resultados excepcionais mesmo em ambientes com alta luminosidade. Seu design robusto, com classificação IP54, proporciona resistência à água e durabilidade em condições desafiadoras. Equipado com duas baterias recarregáveis de 2400mAh, oferece autonomia prolongada para uso contínuo. O controle remoto infravermelho facilita ajustes precisos à distância, enquanto os suportes versáteis e a maleta de transporte tornam este dispositivo ideal para diferentes locais de trabalho. Seja para nivelamento, instalação ou construção, o Nível Laser 4D de 16 Linhas combina precisão, praticidade e inovação para transformar seus desafios de medição em soluções eficientes.`,
-  imageUrl: 'https://p16-oec-sg.ibyteimg.com/tos-alisg-i-aphluv4xwc-sg/b9c1922fa2fe488fb12bd6f6c1c85e6~tplv-aphluv4xwc-resize-webp:800:800.webp?dr=15584&t=555f072d&ps=933b5bde&shp=6ce186a1&shcp=e1be8f53&idc=my2&from=1826719393',
+  imageUrl: 'https://http2.mlstatic.com/D_NQ_NP_2X_618571-MLB86286913319_062025-F-nivel-laser-4d-profissional-16-linhas-com-controle-remoto.webp',
   sellerName: 'Ferramentas PRO',
   sellingPoints: [
     '🔥 Mais de 50% OFF! De R$699 por apenas R$319, só enquanto durar o estoque!',
@@ -235,7 +265,7 @@ const App = () => {
     } catch (error) {
       console.error('Error reading products from localStorage', error);
     }
-    return [laserLevelProduct, thermalCupProduct, cushionCoverProduct, wheyProduct, drillProduct];
+    return [modusBottleProduct, laserLevelProduct, thermalCupProduct, cushionCoverProduct, wheyProduct, drillProduct];
   });
 
   useEffect(() => {
