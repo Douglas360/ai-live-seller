@@ -252,16 +252,22 @@ const App = () => {
     setIsLoadingProducts(true);
     const supabase = getSupabaseClient();
     
+    if (!supabase) {
+        setProducts(defaultProducts);
+        setIsLoadingProducts(false);
+        return;
+    }
+
     const { data, error } = await supabase.from('products').select('*').order('createdAt', { ascending: false });
 
     if (error) {
-        handleError(`Erro ao buscar produtos: ${error.message}.`);
+        handleError(`Erro ao buscar produtos: ${error.message}. Verifique as credenciais em services/supabaseClient.ts.`);
+        setProducts(defaultProducts); // Fallback to demo products on error
     } else if (data) {
-        setProducts(data.length > 0 ? data : defaultProducts);
+        setProducts(data);
     }
     setIsLoadingProducts(false);
   }, [handleError]);
-
 
   useEffect(() => {
     fetchProducts();
@@ -280,6 +286,10 @@ const App = () => {
 
   const handleAddNewProduct = async (newProduct: Product) => {
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      handleError("Para adicionar produtos, configure suas credenciais do Supabase em 'services/supabaseClient.ts'.");
+      throw new Error("Supabase not configured");
+    }
 
     const { data, error } = await supabase
       .from('products')
@@ -288,10 +298,64 @@ const App = () => {
 
     if (error) {
         handleError(`Erro ao adicionar produto: ${error.message}`);
-    } else if (data) {
+        throw error;
+    } else if (data && data.length > 0) {
         setProducts(prevProducts => [data[0], ...prevProducts]);
     }
   };
+
+  const handleUpdateProduct = async (updatedProduct: Product) => {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+        handleError("Para atualizar produtos, configure suas credenciais do Supabase em 'services/supabaseClient.ts'.");
+        throw new Error("Supabase not configured");
+    }
+    
+    const { id, createdAt, ...updatePayload } = updatedProduct;
+
+    const { data, error } = await supabase
+        .from('products')
+        .update(updatePayload)
+        .eq('id', id)
+        .select();
+
+    if (error) {
+        handleError(`Erro ao atualizar produto: ${error.message}`);
+        throw error;
+    } else if (data && data.length > 0) {
+        setProducts(prevProducts => prevProducts.map(p => p.id === id ? data[0] : p));
+    } else {
+        handleError('A atualização falhou. O produto não foi encontrado ou você não tem permissão.');
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        handleError("Para deletar produtos, configure suas credenciais do Supabase em 'services/supabaseClient.ts'.");
+        throw new Error("Supabase not configured");
+      }
+
+      if (!window.confirm("Você tem certeza que deseja deletar este produto? Esta ação não pode ser desfeita.")) {
+          return;
+      }
+
+      const { data, error } = await supabase
+          .from('products')
+          .delete()
+          .eq('id', productId)
+          .select();
+
+      if (error) {
+          handleError(`Erro ao deletar produto: ${error.message}`);
+          throw error;
+      } else if (data && data.length > 0) {
+          setProducts(prevProducts => prevProducts.filter(p => p.id !== productId));
+      } else {
+          handleError('A exclusão falhou. O produto não foi encontrado ou você não tem permissão (verifique as políticas de RLS).');
+      }
+  };
+
 
   return (
     <div className="h-screen bg-primary font-sans flex items-center justify-center p-4">
@@ -312,6 +376,8 @@ const App = () => {
                   products={products}
                   onStartLive={handleStartLive} 
                   onAddProduct={handleAddNewProduct}
+                  onUpdateProduct={handleUpdateProduct}
+                  onDeleteProduct={handleDeleteProduct}
                   isLoading={isLoadingProducts}
               />
               )}

@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { type Product } from '../types';
 import Button from './ui/Button';
 import Card from './ui/Card';
 import Input from './ui/Input';
 import Textarea from './ui/Textarea';
 
-interface AddProductModalProps {
+interface ProductFormModalProps {
   onClose: () => void;
-  onAddProduct: (product: Product) => Promise<void>;
+  onSave: (product: Product) => Promise<void>;
+  productToEdit?: Product | null;
 }
 
-const AddProductModal = ({ onClose, onAddProduct }: AddProductModalProps) => {
+const ProductFormModal = ({ onClose, onSave, productToEdit }: ProductFormModalProps) => {
+  const isEditing = !!productToEdit;
+
   const [name, setName] = useState('');
   const [sellerName, setSellerName] = useState('');
   const [description, setDescription] = useState('');
@@ -22,6 +25,21 @@ const AddProductModal = ({ onClose, onAddProduct }: AddProductModalProps) => {
   const [variations, setVariations] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    if (isEditing && productToEdit) {
+        setName(productToEdit.name);
+        setSellerName(productToEdit.sellerName);
+        setDescription(productToEdit.description);
+        setSellingPoints(productToEdit.sellingPoints.join('\n'));
+        setRegularPrice(String(productToEdit.regularPrice));
+        setSalePrice(productToEdit.salePrice ? String(productToEdit.salePrice) : '');
+        setImageUrl(productToEdit.imageUrl);
+        setReviews(productToEdit.reviews ? productToEdit.reviews.join('\n') : '');
+        setVariations(productToEdit.variations ? productToEdit.variations.join('\n') : '');
+    }
+  }, [productToEdit, isEditing]);
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !description || !regularPrice || !imageUrl || !sellerName || !sellingPoints) {
@@ -31,8 +49,8 @@ const AddProductModal = ({ onClose, onAddProduct }: AddProductModalProps) => {
 
     setIsLoading(true);
 
-    const newProduct: Product = {
-      id: `prod_${Date.now()}`,
+    const productData: Omit<Product, 'createdAt'> = {
+      id: isEditing ? productToEdit.id : `prod_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       name,
       description,
       regularPrice: parseFloat(regularPrice),
@@ -45,13 +63,19 @@ const AddProductModal = ({ onClose, onAddProduct }: AddProductModalProps) => {
     };
 
     try {
-      await onAddProduct(newProduct);
+      // Create a full product object, including createdAt for updates if it exists
+      const finalProduct: Product = {
+        ...productData,
+        createdAt: productToEdit?.createdAt,
+      };
+      await onSave(finalProduct);
     } catch (error) {
-      console.error("Failed to add product:", error);
-      // The error should be displayed by the App component's error handler
-    } finally {
+      // Error is handled by the App component, so we just log it here
+      console.error("Failed to save product:", error);
+      // The loading state should be unset even on failure.
       setIsLoading(false);
     }
+    // Don't set loading to false in a `finally` block because `onSave` might unmount this component.
   };
 
   return (
@@ -67,7 +91,7 @@ const AddProductModal = ({ onClose, onAddProduct }: AddProductModalProps) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <h2 className="text-2xl font-bold mb-6 text-text-light">Cadastrar Novo Produto</h2>
+        <h2 className="text-2xl font-bold mb-6 text-text-light">{isEditing ? 'Editar Produto' : 'Cadastrar Novo Produto'}</h2>
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -124,7 +148,9 @@ const AddProductModal = ({ onClose, onAddProduct }: AddProductModalProps) => {
           </div>
           <div className="pt-4 flex justify-end space-x-3">
              <Button type="button" variant="danger" onClick={onClose} disabled={isLoading}>Cancelar</Button>
-            <Button type="submit" disabled={isLoading}>{isLoading ? 'Adicionando...' : 'Adicionar Produto'}</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Salvando...' : isEditing ? 'Salvar Alterações' : 'Adicionar Produto'}
+            </Button>
           </div>
         </form>
       </Card>
@@ -132,4 +158,4 @@ const AddProductModal = ({ onClose, onAddProduct }: AddProductModalProps) => {
   );
 };
 
-export default AddProductModal;
+export default ProductFormModal;

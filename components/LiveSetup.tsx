@@ -4,7 +4,7 @@ import { type LiveSession, type Product, type VoiceOption, type AudioProvider } 
 import Button from './ui/Button';
 import Select from './ui/Select';
 import ProductCard from './ProductCard';
-import AddProductModal from './AddProductModal';
+import ProductFormModal from './AddProductModal';
 import ProductDetailsPanel from './ProductDetailsPanel';
 import { generateSpeech } from '../services/geminiService';
 import { decode, decodeAudioData } from '../utils/audioUtils';
@@ -13,10 +13,12 @@ interface LiveSetupProps {
   products: Product[];
   onStartLive: (session: LiveSession) => void;
   onAddProduct: (product: Product) => Promise<void>;
+  onUpdateProduct: (product: Product) => Promise<void>;
+  onDeleteProduct: (productId: string) => Promise<void>;
   isLoading: boolean;
 }
 
-const LiveSetup = ({ products, onStartLive, onAddProduct, isLoading: isLoadingProducts }: LiveSetupProps) => {
+const LiveSetup = ({ products, onStartLive, onAddProduct, onUpdateProduct, onDeleteProduct, isLoading: isLoadingProducts }: LiveSetupProps) => {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [audioProvider, setAudioProvider] = useState<AudioProvider>('google');
   
@@ -26,7 +28,10 @@ const LiveSetup = ({ products, onStartLive, onAddProduct, isLoading: isLoadingPr
   const [backgroundImageUrl, setBackgroundImageUrl] = useState('https://picsum.photos/seed/bg/1280/720'); // Not in UI, but needed for session
   const [title, setTitle] = useState('Minha Super Live de Vendas!'); // Not in UI, but needed for session
   const [isLoading, setIsLoading] = useState(false);
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  
+  const [productToEdit, setProductToEdit] = useState<Product | null>(null);
+  const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+
   const [isPreviewing, setIsPreviewing] = useState(false);
 
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -84,11 +89,43 @@ const LiveSetup = ({ products, onStartLive, onAddProduct, isLoading: isLoadingPr
     }, 1500);
   };
 
-  const handleAddProduct = async (newProduct: Product) => {
-    await onAddProduct(newProduct);
-    setSelectedProductId(newProduct.id);
-    setIsProductModalOpen(false);
-  }
+  const handleOpenAddModal = () => {
+    setProductToEdit(null);
+    setIsProductFormOpen(true);
+  };
+
+  const handleOpenEditModal = (product: Product) => {
+    setProductToEdit(product);
+    setIsProductFormOpen(true);
+  };
+
+  const handleSaveProduct = async (productData: Product) => {
+    try {
+      if (productToEdit) {
+        await onUpdateProduct(productData);
+      } else {
+        await onAddProduct(productData);
+      }
+      setSelectedProductId(productData.id);
+      setIsProductFormOpen(false);
+    } catch (error) {
+      // Errors are displayed by the App component's toast
+      console.error("Failed to save product:", error);
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+        await onDeleteProduct(productId);
+        if (selectedProductId === productId) {
+            // If the deleted product was selected, select a different one
+            const newProducts = products.filter(p => p.id !== productId);
+            setSelectedProductId(newProducts.length > 0 ? newProducts[0].id : null);
+        }
+    } catch (error) {
+        console.error("Failed to delete product:", error);
+    }
+  };
 
   const handlePreviewVoice = async () => {
     if (isPreviewing) return;
@@ -202,7 +239,7 @@ const LiveSetup = ({ products, onStartLive, onAddProduct, isLoading: isLoadingPr
               <h2 className="text-2xl font-bold text-text-light">Selecione um Produto</h2>
               <button 
                 type="button" 
-                onClick={() => setIsProductModalOpen(true)}
+                onClick={handleOpenAddModal}
                 className="text-sm text-accent hover:text-accent-hover font-semibold"
               >
                 + Adicionar Novo Produto
@@ -219,10 +256,12 @@ const LiveSetup = ({ products, onStartLive, onAddProduct, isLoading: isLoadingPr
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {products.map(product => (
                     <ProductCard 
-                    key={product.id}
-                    product={product}
-                    isSelected={selectedProductId === product.id}
-                    onSelect={() => setSelectedProductId(product.id)}
+                      key={product.id}
+                      product={product}
+                      isSelected={selectedProductId === product.id}
+                      onSelect={() => setSelectedProductId(product.id)}
+                      onEdit={handleOpenEditModal}
+                      onDelete={handleDeleteProduct}
                     />
                 ))}
                 </div>
@@ -235,10 +274,11 @@ const LiveSetup = ({ products, onStartLive, onAddProduct, isLoading: isLoadingPr
         </div>
       </div>
       
-      {isProductModalOpen && (
-        <AddProductModal 
-          onClose={() => setIsProductModalOpen(false)}
-          onAddProduct={handleAddProduct}
+      {isProductFormOpen && (
+        <ProductFormModal 
+          productToEdit={productToEdit}
+          onClose={() => setIsProductFormOpen(false)}
+          onSave={handleSaveProduct}
         />
       )}
     </>

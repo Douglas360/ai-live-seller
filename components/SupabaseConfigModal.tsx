@@ -5,9 +5,10 @@ import Input from './ui/Input';
 
 interface SupabaseConfigModalProps {
   onSave: () => void;
+  onClose: () => void;
 }
 
-const SupabaseConfigModal = ({ onSave }: SupabaseConfigModalProps) => {
+const SupabaseConfigModal = ({ onSave, onClose }: SupabaseConfigModalProps) => {
   const [url, setUrl] = useState(localStorage.getItem('supabaseUrl') || '');
   const [anonKey, setAnonKey] = useState(localStorage.getItem('supabaseAnonKey') || '');
   const [error, setError] = useState('');
@@ -18,7 +19,6 @@ const SupabaseConfigModal = ({ onSave }: SupabaseConfigModalProps) => {
       return;
     }
     
-    // Basic validation
     if (!url.startsWith('http')) {
         setError('A URL do Supabase deve começar com http ou https.');
         return;
@@ -32,12 +32,12 @@ const SupabaseConfigModal = ({ onSave }: SupabaseConfigModalProps) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg relative">
+      <Card className="w-full max-w-lg relative animate-fade-in-down">
         <div className="text-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-accent mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4M4 7l8 4.5 8-4.5M12 11.5V21" /></svg>
             <h2 className="text-2xl font-bold mb-2 text-text-light">Configuração do Supabase</h2>
             <p className="text-text-dark mb-6">
-                Para salvar e carregar produtos, por favor, insira as credenciais do seu projeto Supabase. Você pode encontrá-las em{' '}
+                Para salvar, editar e deletar produtos, por favor, conecte seu próprio projeto Supabase. Você pode encontrar as credenciais em{' '}
                 <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-accent underline">
                     Project Settings &gt; API
                 </a>.
@@ -65,8 +65,11 @@ const SupabaseConfigModal = ({ onSave }: SupabaseConfigModalProps) => {
                 placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
             />
           </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
           <Button onClick={handleSave} className="w-full !py-3">Salvar e Conectar</Button>
+          <button onClick={onClose} className="w-full text-center text-sm text-text-dark hover:text-text-light mt-2 transition-colors">
+            Continuar em modo de demonstração
+          </button>
         </div>
       </Card>
     </div>
