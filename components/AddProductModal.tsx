@@ -63,10 +63,10 @@ const ProductFormModal = ({ onClose, onSave, productToEdit }: ProductFormModalPr
     };
 
     try {
-      // Create a full product object, including createdAt for updates if it exists
+      // For new products, add a createdAt timestamp. For existing ones, preserve the original.
       const finalProduct: Product = {
         ...productData,
-        createdAt: productToEdit?.createdAt,
+        createdAt: isEditing ? productToEdit.createdAt : new Date().toISOString(),
       };
       await onSave(finalProduct);
     } catch (error) {
