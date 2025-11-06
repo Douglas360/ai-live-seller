@@ -11,6 +11,7 @@ export interface Product {
   sellingPoints: string[];
   reviews?: string[];
   variations?: string[];
+  createdAt?: string;
 }
 
 export interface VoiceOption {

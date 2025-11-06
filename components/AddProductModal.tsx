@@ -7,7 +7,7 @@ import Textarea from './ui/Textarea';
 
 interface AddProductModalProps {
   onClose: () => void;
-  onAddProduct: (product: Product) => void;
+  onAddProduct: (product: Product) => Promise<void>;
 }
 
 const AddProductModal = ({ onClose, onAddProduct }: AddProductModalProps) => {
@@ -20,13 +20,16 @@ const AddProductModal = ({ onClose, onAddProduct }: AddProductModalProps) => {
   const [imageUrl, setImageUrl] = useState('');
   const [reviews, setReviews] = useState('');
   const [variations, setVariations] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !description || !regularPrice || !imageUrl || !sellerName || !sellingPoints) {
       alert('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
+
+    setIsLoading(true);
 
     const newProduct: Product = {
       id: `prod_${Date.now()}`,
@@ -41,7 +44,14 @@ const AddProductModal = ({ onClose, onAddProduct }: AddProductModalProps) => {
       variations: variations.split('\n').filter(variation => variation.trim() !== ''),
     };
 
-    onAddProduct(newProduct);
+    try {
+      await onAddProduct(newProduct);
+    } catch (error) {
+      console.error("Failed to add product:", error);
+      // The error should be displayed by the App component's error handler
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -51,6 +61,7 @@ const AddProductModal = ({ onClose, onAddProduct }: AddProductModalProps) => {
           onClick={onClose}
           className="absolute top-4 right-4 text-text-dark hover:text-text-light transition-colors"
           aria-label="Close modal"
+          disabled={isLoading}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -61,24 +72,24 @@ const AddProductModal = ({ onClose, onAddProduct }: AddProductModalProps) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="prod-name" className="block text-sm font-medium text-text-dark mb-2">Nome do Produto *</label>
-              <Input id="prod-name" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+              <Input id="prod-name" type="text" value={name} onChange={(e) => setName(e.target.value)} required disabled={isLoading}/>
             </div>
             <div>
               <label htmlFor="prod-seller" className="block text-sm font-medium text-text-dark mb-2">Nome do Vendedor *</label>
-              <Input id="prod-seller" type="text" value={sellerName} onChange={(e) => setSellerName(e.target.value)} required />
+              <Input id="prod-seller" type="text" value={sellerName} onChange={(e) => setSellerName(e.target.value)} required disabled={isLoading}/>
             </div>
           </div>
           <div>
             <label htmlFor="prod-desc" className="block text-sm font-medium text-text-dark mb-2">Descrição Curta *</label>
-            <Input id="prod-desc" type="text" value={description} onChange={(e) => setDescription(e.target.value)} required placeholder="Ex: Kit de almofadas macias para o Natal"/>
+            <Input id="prod-desc" type="text" value={description} onChange={(e) => setDescription(e.target.value)} required placeholder="Ex: Kit de almofadas macias para o Natal" disabled={isLoading}/>
           </div>
            <div>
             <label htmlFor="prod-image" className="block text-sm font-medium text-text-dark mb-2">URL da Imagem *</label>
-            <Input id="prod-image" type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} required />
+            <Input id="prod-image" type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} required disabled={isLoading}/>
           </div>
           <div>
             <label htmlFor="prod-points" className="block text-sm font-medium text-text-dark mb-2">Pontos de Venda (um por linha) *</label>
-            <Textarea id="prod-points" value={sellingPoints} onChange={(e) => setSellingPoints(e.target.value)} required />
+            <Textarea id="prod-points" value={sellingPoints} onChange={(e) => setSellingPoints(e.target.value)} required disabled={isLoading}/>
           </div>
 
            <div className="border-t border-border-color pt-4 mt-4">
@@ -86,11 +97,11 @@ const AddProductModal = ({ onClose, onAddProduct }: AddProductModalProps) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label htmlFor="prod-price-regular" className="block text-sm font-medium text-text-dark mb-2">Preço Regular *</label>
-                    <Input id="prod-price-regular" type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(e.target.value)} required placeholder="29.90"/>
+                    <Input id="prod-price-regular" type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(e.target.value)} required placeholder="29.90" disabled={isLoading}/>
                 </div>
                 <div>
                     <label htmlFor="prod-price-sale" className="block text-sm font-medium text-text-dark mb-2">Preço com Desconto (opcional)</label>
-                    <Input id="prod-price-sale" type="number" step="0.01" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} placeholder="19.90" />
+                    <Input id="prod-price-sale" type="number" step="0.01" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} placeholder="19.90" disabled={isLoading}/>
                 </div>
               </div>
            </div>
@@ -104,16 +115,16 @@ const AddProductModal = ({ onClose, onAddProduct }: AddProductModalProps) => {
               </div>
               <div>
                   <label htmlFor="prod-reviews" className="block text-sm font-medium text-text-dark mb-2">Avaliações Recentes (opcional, uma por linha)</label>
-                  <Textarea id="prod-reviews" value={reviews} onChange={(e) => setReviews(e.target.value)} />
+                  <Textarea id="prod-reviews" value={reviews} onChange={(e) => setReviews(e.target.value)} disabled={isLoading}/>
               </div>
               <div className="mt-4">
                   <label htmlFor="prod-variations" className="block text-sm font-medium text-text-dark mb-2">Variações do Produto & Ofertas (opcional, uma por linha)</label>
-                  <Textarea id="prod-variations" value={variations} onChange={(e) => setVariations(e.target.value)} placeholder="Ex: Leve 2 e ganhe frete grátis"/>
+                  <Textarea id="prod-variations" value={variations} onChange={(e) => setVariations(e.target.value)} placeholder="Ex: Leve 2 e ganhe frete grátis" disabled={isLoading}/>
               </div>
           </div>
           <div className="pt-4 flex justify-end space-x-3">
-             <Button type="button" variant="danger" onClick={onClose}>Cancelar</Button>
-            <Button type="submit">Adicionar Produto</Button>
+             <Button type="button" variant="danger" onClick={onClose} disabled={isLoading}>Cancelar</Button>
+            <Button type="submit" disabled={isLoading}>{isLoading ? 'Adicionando...' : 'Adicionar Produto'}</Button>
           </div>
         </form>
       </Card>

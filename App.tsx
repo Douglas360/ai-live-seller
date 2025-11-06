@@ -1,10 +1,10 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import LiveSetup from './components/LiveSetup';
 import LiveDashboard from './components/LiveDashboard';
 import { type LiveSession, type Product } from './types';
 import ErrorToast from './components/ui/ErrorToast';
+import { getSupabaseClient } from './services/supabaseClient';
 
 const modusBottleProduct: Product = {
   id: 'prod_garrafa_modus_1700ml',
@@ -234,47 +234,38 @@ const laserLevelProduct: Product = {
   ]
 };
 
+const defaultProducts = [modusBottleProduct, laserLevelProduct, thermalCupProduct, cushionCoverProduct, wheyProduct, drillProduct];
 
 const App = () => {
   const [liveSession, setLiveSession] = useState<LiveSession | null>(null);
   const [liveStartTime, setLiveStartTime] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+
+  const handleError = useCallback((message: string) => {
+    setError(message);
+    setTimeout(() => setError(null), 10000);
+  }, []);
   
-  const [products, setProducts] = useState<Product[]>(() => {
-    try {
-      const savedProducts = localStorage.getItem('ai-live-seller-products');
-      if (savedProducts) {
-        const parsed = JSON.parse(savedProducts);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const validProducts = parsed.filter(p => p && typeof p === 'object' && p.id);
-          
-          return validProducts.map((p: any) => ({
-            id: p.id,
-            name: p.name || 'Produto Inválido',
-            regularPrice: typeof p.regularPrice === 'number' ? p.regularPrice : (typeof p.price === 'number' ? p.price : 0),
-            salePrice: typeof p.salePrice === 'number' ? p.salePrice : undefined,
-            description: p.description || 'Este produto não tem uma descrição.',
-            imageUrl: p.imageUrl || `https://picsum.photos/seed/${p.id || 'default'}/400/300`,
-            sellerName: p.sellerName || 'Loja Parceira',
-            sellingPoints: Array.isArray(p.sellingPoints) ? p.sellingPoints : ['Produto de alta qualidade!'],
-            reviews: Array.isArray(p.reviews) ? p.reviews : undefined,
-            variations: Array.isArray(p.variations) ? p.variations : undefined,
-          }));
-        }
-      }
-    } catch (error) {
-      console.error('Error reading products from localStorage', error);
+  const fetchProducts = useCallback(async () => {
+    setIsLoadingProducts(true);
+    const supabase = getSupabaseClient();
+    
+    const { data, error } = await supabase.from('products').select('*').order('createdAt', { ascending: false });
+
+    if (error) {
+        handleError(`Erro ao buscar produtos: ${error.message}.`);
+    } else if (data) {
+        setProducts(data.length > 0 ? data : defaultProducts);
     }
-    return [modusBottleProduct, laserLevelProduct, thermalCupProduct, cushionCoverProduct, wheyProduct, drillProduct];
-  });
+    setIsLoadingProducts(false);
+  }, [handleError]);
+
 
   useEffect(() => {
-    try {
-      localStorage.setItem('ai-live-seller-products', JSON.stringify(products));
-    } catch (error) {
-      console.error('Error saving products to localStorage', error);
-    }
-  }, [products]);
+    fetchProducts();
+  }, [fetchProducts]);
 
   const handleStartLive = (session: LiveSession) => {
     setError(null);
@@ -287,13 +278,19 @@ const App = () => {
     setLiveStartTime(null);
   };
 
-  const handleAddNewProduct = (newProduct: Product) => {
-    setProducts(prevProducts => [...prevProducts, newProduct]);
-  };
-  
-  const handleError = (message: string) => {
-    setError(message);
-    setTimeout(() => setError(null), 10000);
+  const handleAddNewProduct = async (newProduct: Product) => {
+    const supabase = getSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('products')
+      .insert([newProduct])
+      .select();
+
+    if (error) {
+        handleError(`Erro ao adicionar produto: ${error.message}`);
+    } else if (data) {
+        setProducts(prevProducts => [data[0], ...prevProducts]);
+    }
   };
 
   return (
@@ -301,6 +298,7 @@ const App = () => {
       <div className="w-full h-full bg-primary flex flex-col border border-border-color rounded-xl overflow-hidden shadow-2xl max-w-screen-2xl">
         <Header isLive={!!liveSession} startTime={liveStartTime} />
         {error && <ErrorToast message={error} onClose={() => setError(null)} />}
+
         <main className="flex-grow relative overflow-hidden p-4 md:p-8">
           <div className="h-full overflow-y-auto">
               {liveSession ? (
@@ -314,6 +312,7 @@ const App = () => {
                   products={products}
                   onStartLive={handleStartLive} 
                   onAddProduct={handleAddNewProduct}
+                  isLoading={isLoadingProducts}
               />
               )}
           </div>
